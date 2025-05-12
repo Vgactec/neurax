@@ -27,6 +27,10 @@ args = "Download Neurax Files"
 task = "workflow.run"
 args = "Download With Progress"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Clone With Token"
+
 [[workflows.workflow]]
 name = "Neurax Analysis Tool"
 author = "agent"
@@ -58,6 +62,14 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python download_with_progress.py"
+
+[[workflows.workflow]]
+name = "Clone With Token"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python clone_with_token.py"
 
 [deployment]
 run = ["sh", "-c", "python clone_and_analyze.py"]
