@@ -19,6 +19,10 @@ args = "Neurax Analysis Tool"
 task = "workflow.run"
 args = "run_script"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Download Neurax Files"
+
 [[workflows.workflow]]
 name = "Neurax Analysis Tool"
 author = "agent"
@@ -34,6 +38,14 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python clone_and_analyze.py"
+
+[[workflows.workflow]]
+name = "Download Neurax Files"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python download_neurax.py"
 
 [deployment]
 run = ["sh", "-c", "python clone_and_analyze.py"]
