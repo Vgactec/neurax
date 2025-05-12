@@ -71,5 +71,14 @@ author = "agent"
 task = "shell.exec"
 args = "python clone_with_token.py"
 
+[[workflows.workflow]]
+name = "Run Tests"
+author = 42608764
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd neurax_complet && python -m unittest discover -v tests/"
+
 [deployment]
 run = ["sh", "-c", "python clone_and_analyze.py"]
