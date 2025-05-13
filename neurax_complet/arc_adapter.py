@@ -10,7 +10,7 @@ représentations adaptées au simulateur de gravité quantique et vice versa.
 
 import numpy as np
 import logging
-from neurax_complet.quantum_gravity_sim import QuantumGravitySimulator
+from quantum_gravity_sim import QuantumGravitySimulator
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, 
