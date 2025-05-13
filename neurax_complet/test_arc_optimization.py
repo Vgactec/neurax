@@ -71,11 +71,24 @@ class OptimizationTester:
         
     def _load_arc_data(self):
         """Charge les données ARC à partir des fichiers JSON"""
-        arc_data = {
-            "training": [],
-            "evaluation": [],
-            "test": []
-        }
+        try:
+            with open(os.path.join(self.data_path, "arc-agi_training_challenges.json"), 'r') as f:
+                training_data = json.load(f)
+            with open(os.path.join(self.data_path, "arc-agi_evaluation_challenges.json"), 'r') as f:
+                evaluation_data = json.load(f)
+                
+            return {
+                "training": list(training_data.values()),
+                "evaluation": list(evaluation_data.values()),
+                "test": []
+            }
+        except Exception as e:
+            logger.error(f"Erreur chargement données ARC: {str(e)}")
+            return {
+                "training": [],
+                "evaluation": [],
+                "test": []
+            }
         
         # Charger les puzzles d'entraînement
         train_path = os.path.join(self.data_path, "arc-agi_training_challenges.json")
