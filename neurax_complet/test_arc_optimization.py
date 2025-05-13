@@ -46,7 +46,8 @@ console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
+if not logging.getLogger('').handlers:
+    logging.getLogger('').addHandler(console)
 
 logger = logging.getLogger(__name__)
 
@@ -123,13 +124,28 @@ class OptimizationTester:
         return arc_data
     
     def _verify_data_files(self):
-        """Vérifie si les fichiers de données requis sont présents"""
-        training_file = os.path.join(self.data_path, "arc-agi_training_challenges.json")
-        evaluation_file = os.path.join(self.data_path, "arc-agi_evaluation_challenges.json")
+        """Vérifie si les fichiers de données requis sont présents et valides"""
+        required_files = [
+            "arc-agi_training_challenges.json",
+            "arc-agi_evaluation_challenges.json",
+            "arc-agi_training_solutions.json",
+            "arc-agi_evaluation_solutions.json"
+        ]
         
-        if not (os.path.exists(training_file) and os.path.exists(evaluation_file)):
-            logger.warning(f"Fichiers de données ARC manquants dans: {self.data_path}")
-            return False
+        for file in required_files:
+            path = os.path.join(self.data_path, file)
+            if not os.path.exists(path):
+                logger.warning(f"Fichier manquant: {file}")
+                return False
+            try:
+                with open(path, 'r') as f:
+                    data = json.load(f)
+                if not isinstance(data, dict):
+                    logger.warning(f"Format invalide pour {file}")
+                    return False
+            except Exception as e:
+                logger.error(f"Erreur lors de la lecture de {file}: {str(e)}")
+                return False
         return True
 
     def _convert_grid(self, grid_data):
@@ -137,6 +153,9 @@ class OptimizationTester:
         return np.array(grid_data)
 
     def test_simulator_optimizations(self, num_steps=10, grid_sizes=[20, 32, 50], verbose=True):
+        # Libérer la mémoire entre les tests
+        import gc
+        gc.collect()
         """
         Teste les optimisations du simulateur de gravité quantique
 
@@ -221,7 +240,7 @@ class OptimizationTester:
         if not puzzle_ids:
             if self.arc_data["training"]:
                 puzzle_ids = random.sample(
-                    [p["id"] for p in self.arc_data["training"]], 
+                    list(self.arc_data["training"]["challenges"].keys()), 
                     min(5, len(self.arc_data["training"]))
                 )
             else:
