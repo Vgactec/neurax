@@ -28,6 +28,14 @@ import random
 import copy
 import warnings
 
+# Import du simulateur de gravité quantique
+from neurax_complet.quantum_gravity_sim import QuantumGravitySimulator
+
+# Constants
+QUANTUM_GRID_SIZE = 50  # Taille de la grille pour le simulateur
+NUM_TIME_STEPS = 10     # Nombre de pas temporels pour la simulation
+MAX_ITERATIONS = 100    # Nombre maximum d'itérations d'apprentissage
+
 # Configuration du logging
 logging.basicConfig(
     level=logging.INFO,

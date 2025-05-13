@@ -1,617 +1,664 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """
-Implémentation du neurone quantique gravitationnel
-Ce module implémente la couche neuronale basée sur l'équation L(t) = 1 - e^{-t\,\phi(t)}
+Module d'Implémentation du Neurone Quantique Gravitationnel
+
+Ce module implémente les neurones quantiques capables d'apprendre à partir
+des fluctuations de l'espace-temps simulées par le simulateur de gravité quantique.
+Ces neurones servent de base à l'apprentissage des patterns abstraits.
 """
 
 import numpy as np
 import logging
-import time
-from datetime import datetime
-import json
-import hashlib
-from ..quantum_sim.simulator import QuantumGravitySimulator
+import uuid
+from scipy.special import expit  # Fonction sigmoïde
 from ..quantum_sim.constants import *
 
-class QuantumGravitationalNeuron:
+logger = logging.getLogger(__name__)
+
+class QuantumNeuron:
     """
-    Neurone quantique gravitationnel qui étend le simulateur avec des capacités d'apprentissage
-    et d'adaptation basées sur l'équation L(t) = 1 - e^{-t\,\phi(t)}
+    Implémentation d'un neurone quantique gravitationnel.
+    
+    Ce neurone utilise les propriétés quantiques de l'espace-temps pour apprendre
+    et reconnaître des patterns complexes. Il combine des aspects de réseaux de neurones
+    traditionnels avec des principes de mécanique quantique.
     """
     
-    def __init__(self, grid_size=DEFAULT_GRID_SIZE, time_steps=DEFAULT_TIME_STEPS,
-                 p_0=0.5, beta_1=0.3, beta_2=0.3, beta_3=0.2):
+    def __init__(self, input_dim=1, learning_rate=0.01, quantum_factor=0.5, use_bias=True, activation_type="lorentz"):
         """
-        Initialise un neurone quantique gravitationnel.
+        Initialise un neurone quantique.
         
         Args:
-            grid_size (int): Taille de la grille spatiale 3D
-            time_steps (int): Nombre d'étapes temporelles
-            p_0 (float): Probabilité de base
-            beta_1 (float): Coefficient d'influence créative
-            beta_2 (float): Coefficient d'influence décisionnelle
-            beta_3 (float): Coefficient d'influence du réseau
+            input_dim (int): Dimension d'entrée du neurone
+            learning_rate (float): Taux d'apprentissage initial
+            quantum_factor (float): Facteur d'influence quantique (0-1)
+            use_bias (bool): Utiliser un biais ou non
+            activation_type (str): Type de fonction d'activation ('lorentz', 'sigmoid', 'tanh')
         """
-        self.logger = logging.getLogger(__name__)
+        self.id = str(uuid.uuid4())[:8]  # Identifiant unique court
+        self.input_dim = input_dim
+        self.learning_rate = learning_rate
+        self.quantum_factor = quantum_factor
+        self.use_bias = use_bias
+        self.activation_type = activation_type
         
-        # Initialiser le simulateur quantique sous-jacent
-        self.simulator = QuantumGravitySimulator(grid_size, time_steps)
+        # Initialisation des poids avec une distribution normale
+        self.weights = np.random.normal(0, 0.1, input_dim)
         
-        # Paramètres neuronaux
-        self.p_0 = p_0
-        self.beta_1 = beta_1
-        self.beta_2 = beta_2
-        self.beta_3 = beta_3
+        # Initialisation du biais
+        self.bias = np.random.normal(0, 0.1) if use_bias else 0
         
-        # État neuronal
-        self.iterations = 0
-        self.activation_history = []
-        self.creativity_history = []
-        self.decision_history = []
-        self.network_consensus_history = []
-        self.p_effective_history = []
+        # Historique d'apprentissage
+        self.training_history = []
         
-        # État du réseau
-        self.neighbors = {}  # {node_id: connection_weight}
-        self.shared_knowledge = []
-        self.received_knowledge = []
+        # Métriques quantiques
+        self.quantum_state = np.zeros(input_dim)
+        self.quantum_phase = 0.0
+        self.coherence = 1.0  # Niveau de cohérence quantique (0-1)
         
-        # Identificateur unique du neurone
-        self.node_id = self._generate_node_id()
-        
-        self.logger.info(f"Quantum gravitational neuron initialized with ID: {self.node_id}")
-        self.logger.debug(f"Neural parameters: p_0={p_0}, beta_1={beta_1}, beta_2={beta_2}, beta_3={beta_3}")
-        
-    def _generate_node_id(self):
+        logger.info(f"Neurone quantique {self.id} initialisé: dim={input_dim}, qfactor={quantum_factor}")
+    
+    def _lorentz_activation(self, z, phi=None):
         """
-        Génère un identifiant unique pour ce neurone.
+        Fonction d'activation de Lorentz: L(t) = 1 - e^{-t\phi(t)}
         
+        Cette fonction d'activation est inspirée de l'équation de time dilation de Lorentz
+        et permet de moduler la sensibilité du neurone en fonction de l'intensité de l'entrée.
+        
+        Args:
+            z (float): Valeur d'entrée
+            phi (callable, optional): Fonction modulatrice. Si None, utilise |z|.
+            
         Returns:
-            str: Identifiant unique
+            float: Valeur d'activation
         """
-        # Combiner plusieurs sources d'entropie pour l'unicité
-        unique_data = {
-            'timestamp': time.time(),
-            'random': np.random.random(),
-            'grid_size': self.simulator.grid_size,
-            'machine_info': {
-                'time_steps': self.simulator.time_steps
-            }
+        if phi is None:
+            phi = abs(z)
+        
+        # Éviter l'overflow pour les grandes valeurs négatives
+        if z < -100:
+            return 0
+        
+        return 1 - np.exp(-z * phi)
+    
+    def _sigmoid_activation(self, z):
+        """Fonction d'activation sigmoïde: 1/(1+e^(-z))"""
+        return expit(z)
+    
+    def _tanh_activation(self, z):
+        """Fonction d'activation tangente hyperbolique: tanh(z)"""
+        return np.tanh(z)
+    
+    def _quantum_modulation(self, input_values):
+        """
+        Applique une modulation quantique aux entrées.
+        
+        Cette fonction introduit des effets quantiques (superposition, interférence)
+        dans le calcul du neurone.
+        
+        Args:
+            input_values (numpy.ndarray): Valeurs d'entrée
+            
+        Returns:
+            numpy.ndarray: Valeurs modulées
+        """
+        # Mise à jour de l'état quantique
+        self.quantum_state = (1 - self.quantum_factor) * self.quantum_state + self.quantum_factor * input_values
+        
+        # Mise à jour de la phase quantique (rotation dans l'espace des phases)
+        self.quantum_phase += 0.1 * np.sum(input_values) % (2 * np.pi)
+        
+        # Moduler les entrées avec des effets quantiques
+        modulated_values = input_values + self.quantum_factor * (
+            np.sin(self.quantum_phase) * self.quantum_state
+        )
+        
+        # Appliquer un facteur de décohérence (réduction des effets quantiques avec le temps)
+        self.coherence *= 0.99  # Décroissance lente de la cohérence
+        self.coherence = max(0.1, self.coherence)  # Garder un minimum de cohérence
+        
+        return modulated_values
+    
+    def activate(self, input_values):
+        """
+        Calcule l'activation du neurone pour des valeurs d'entrée.
+        
+        Args:
+            input_values (numpy.ndarray): Valeurs d'entrée (doit avoir la dimension input_dim)
+            
+        Returns:
+            float: Valeur d'activation du neurone
+        """
+        # Vérifier la dimension d'entrée
+        if np.isscalar(input_values):
+            input_values = np.array([input_values])
+        
+        # Redimensionner si nécessaire
+        if len(input_values) != self.input_dim:
+            if len(input_values) > self.input_dim:
+                input_values = input_values[:self.input_dim]
+            else:
+                # Padding avec des zéros
+                padded = np.zeros(self.input_dim)
+                padded[:len(input_values)] = input_values
+                input_values = padded
+        
+        # Appliquer la modulation quantique
+        modulated_input = self._quantum_modulation(input_values)
+        
+        # Calculer l'entrée pondérée
+        z = np.dot(self.weights, modulated_input)
+        if self.use_bias:
+            z += self.bias
+        
+        # Appliquer la fonction d'activation appropriée
+        if self.activation_type == "lorentz":
+            return self._lorentz_activation(z)
+        elif self.activation_type == "sigmoid":
+            return self._sigmoid_activation(z)
+        elif self.activation_type == "tanh":
+            return self._tanh_activation(z)
+        else:
+            # Par défaut, utiliser Lorentz
+            return self._lorentz_activation(z)
+    
+    def learn(self, input_values, target, learning_rate=None):
+        """
+        Ajuste les poids du neurone selon l'erreur observée.
+        
+        Implémente un apprentissage inspiré de la descente de gradient, mais
+        avec des modifications quantiques pour améliorer l'exploration de l'espace des poids.
+        
+        Args:
+            input_values (numpy.ndarray): Valeurs d'entrée
+            target (float): Valeur cible attendue
+            learning_rate (float, optional): Taux d'apprentissage spécifique pour cette itération
+            
+        Returns:
+            float: Erreur après ajustement
+        """
+        # Utiliser le learning rate par défaut si non spécifié
+        lr = learning_rate if learning_rate is not None else self.learning_rate
+        
+        # Calculer l'activation actuelle
+        actual = self.activate(input_values)
+        
+        # Calculer l'erreur
+        error = target - actual
+        
+        # Vérifier que input_values est un tableau
+        if np.isscalar(input_values):
+            input_values = np.array([input_values])
+        
+        # Appliquer la modulation quantique aux entrées
+        modulated_input = self._quantum_modulation(input_values)
+        
+        # Ajuster les poids avec une composante quantique
+        # La composante quantique ajoute une exploration stochastique guidée par l'état quantique
+        # Cela permet de sortir des minimums locaux et d'explorer plus largement l'espace des solutions
+        quantum_adjustment = self.quantum_factor * np.sin(self.quantum_phase) * self.quantum_state
+        
+        # Mise à jour des poids (combinaison d'apprentissage classique et quantique)
+        weight_update = lr * error * modulated_input
+        quantum_weight_update = lr * error * quantum_adjustment
+        
+        self.weights += weight_update + self.coherence * quantum_weight_update
+        
+        # Mise à jour du biais si utilisé
+        if self.use_bias:
+            self.bias += lr * error
+        
+        # Enregistrer l'historique d'apprentissage
+        self.training_history.append({
+            "error": error,
+            "weights": self.weights.copy(),
+            "bias": self.bias,
+            "coherence": self.coherence
+        })
+        
+        return error
+    
+    def batch_learn(self, input_batch, target_batch, epochs=1, learning_rate=None):
+        """
+        Apprentissage par lot sur plusieurs exemples.
+        
+        Args:
+            input_batch (list): Liste de valeurs d'entrée
+            target_batch (list): Liste de valeurs cibles
+            epochs (int): Nombre d'époques d'apprentissage
+            learning_rate (float, optional): Taux d'apprentissage
+            
+        Returns:
+            dict: Résultats d'apprentissage avec erreurs moyennes par époque
+        """
+        results = {
+            "epoch_errors": [],
+            "final_weights": None,
+            "final_bias": None,
+            "convergence": False
         }
         
-        # Créer un hash unique
-        serialized = json.dumps(unique_data, sort_keys=True)
-        return hashlib.sha256(serialized.encode()).hexdigest()[:16]
+        # Validations des entrées
+        if len(input_batch) != len(target_batch):
+            raise ValueError("Le nombre d'entrées et de cibles doit être identique")
         
-    def calculate_creativity_index(self):
+        # Apprentissage sur plusieurs époques
+        for epoch in range(epochs):
+            epoch_errors = []
+            
+            # Mélanger les données à chaque époque
+            indices = np.random.permutation(len(input_batch))
+            
+            for i in indices:
+                # Apprentissage sur chaque exemple
+                error = self.learn(input_batch[i], target_batch[i], learning_rate)
+                epoch_errors.append(error)
+            
+            # Calculer l'erreur moyenne de l'époque
+            mean_error = np.mean(np.abs(epoch_errors))
+            results["epoch_errors"].append(mean_error)
+            
+            # Vérifier la convergence (si l'erreur est suffisamment faible)
+            if mean_error < 0.01:
+                results["convergence"] = True
+                break
+        
+        # Enregistrer les poids finaux
+        results["final_weights"] = self.weights.copy()
+        results["final_bias"] = self.bias
+        
+        return results
+    
+    def reset(self):
+        """Réinitialise les poids et l'état du neurone"""
+        self.weights = np.random.normal(0, 0.1, self.input_dim)
+        self.bias = np.random.normal(0, 0.1) if self.use_bias else 0
+        self.quantum_state = np.zeros(self.input_dim)
+        self.quantum_phase = 0.0
+        self.coherence = 1.0
+        self.training_history = []
+    
+    def get_state(self):
         """
-        Calcule l'indice de créativité I_crea basé sur l'état de l'espace-temps.
-        Mesure la diversité et l'originalité des structures d'espace-temps.
+        Retourne l'état complet du neurone.
         
         Returns:
-            float: Indice de créativité entre 0 et 1
-        """
-        # Obtenir l'état courant
-        current_state = self.simulator.get_current_state()
-        
-        # Mesurer la diversité (variabilité des structures)
-        diversity = np.std(current_state) / (np.mean(np.abs(current_state)) + EPSILON)
-        
-        # Mesurer l'originalité (formations non-uniformes, pics, motifs)
-        gradient = np.gradient(current_state)
-        gradient_magnitude = np.sqrt(np.sum([g**2 for g in gradient], axis=0))
-        peak_ratio = np.sum(gradient_magnitude > np.mean(gradient_magnitude) + np.std(gradient_magnitude)) / gradient_magnitude.size
-        
-        # Mesurer la complexité des structures
-        fft_spectrum = np.abs(np.fft.fftn(current_state))
-        spectral_complexity = np.std(fft_spectrum) / (np.mean(fft_spectrum) + EPSILON)
-        
-        # Combiner les mesures et normaliser
-        creativity = (0.4 * diversity + 0.3 * peak_ratio + 0.3 * spectral_complexity)
-        normalized_creativity = np.tanh(creativity)
-        
-        self.logger.debug(f"Creativity index: {normalized_creativity:.4f} (diversity: {diversity:.4f}, peaks: {peak_ratio:.4f}, complexity: {spectral_complexity:.4f})")
-        
-        return normalized_creativity
-        
-    def calculate_decision_index(self):
-        """
-        Calcule l'indice de décision I_decis basé sur la cohérence des structures d'espace-temps.
-        Mesure la qualité "décisionnelle" du neurone par la cohérence de ses configurations.
-        
-        Returns:
-            float: Indice de décision entre 0 et 1
-        """
-        # Obtenir l'état courant et la courbure
-        current_state = self.simulator.get_current_state()
-        curvature = self.simulator.calculate_curvature()
-        
-        # Calculer le gradient de l'état courant
-        gradient = np.gradient(current_state)
-        gradient_magnitude = np.sqrt(np.sum([g**2 for g in gradient], axis=0))
-        
-        # Mesurer la cohérence entre la courbure et le gradient
-        # Une forte corrélation indique des structures cohérentes
-        flattened_curvature = curvature.flatten()
-        flattened_gradient = gradient_magnitude.flatten()
-        
-        # Calcul de la corrélation (éviter les erreurs numériques)
-        if np.std(flattened_curvature) > EPSILON and np.std(flattened_gradient) > EPSILON:
-            coherence = np.corrcoef(flattened_curvature, flattened_gradient)[0,1]
-            coherence = 0 if np.isnan(coherence) else coherence
-        else:
-            coherence = 0
-            
-        # Mesurer la stabilité temporelle si on a un historique
-        stability = 0.0
-        if self.iterations > 1 and len(self.activation_history) > 0:
-            prev_activation = self.activation_history[-1]
-            stability = 1.0 - np.min([abs(prev_activation - 0.5) * 2, 1.0])
-        
-        # Mesurer l'efficacité énergétique
-        metrics = self.simulator.get_metrics()
-        energy_ratio = np.exp(-abs(metrics['total_energy'] / (metrics['mean_curvature'] + EPSILON)))
-        energy_efficiency = np.clip(energy_ratio, 0, 1)
-        
-        # Combiner les mesures et normaliser
-        decision_quality = (0.5 * abs(coherence) + 0.3 * stability + 0.2 * energy_efficiency)
-        normalized_decision = 0.5 * (np.tanh(decision_quality) + 1)  # Normaliser entre 0 et 1
-        
-        self.logger.debug(f"Decision index: {normalized_decision:.4f} (coherence: {coherence:.4f}, stability: {stability:.4f}, efficiency: {energy_efficiency:.4f})")
-        
-        return normalized_decision
-        
-    def calculate_network_consensus(self, peer_states=None):
-        """
-        Calcule l'indice de consensus réseau C_reseau basé sur l'alignement avec les pairs.
-        Mesure la cohérence du neurone avec les connaissances partagées par ses voisins.
-        
-        Args:
-            peer_states (dict): Dict de {peer_id: state_dict} ou None
-            
-        Returns:
-            float: Indice de consensus entre 0 et 1
-        """
-        # Si pas de pairs connectés ou pas d'états reçus, retourner une valeur par défaut
-        if not peer_states or not self.neighbors:
-            return 0.0
-            
-        consensus_score = 0.0
-        weight_sum = 0.0
-        
-        for peer_id, state in peer_states.items():
-            if peer_id in self.neighbors:
-                # Calculer la similarité avec l'état du pair
-                similarity = self._calculate_state_similarity(state)
-                
-                # Pondérer par la force de la connexion
-                weight = self.neighbors[peer_id]
-                consensus_score += similarity * weight
-                weight_sum += weight
-        
-        # Normalisation
-        if weight_sum > EPSILON:
-            normalized_consensus = consensus_score / weight_sum
-        else:
-            normalized_consensus = 0
-            
-        self.logger.debug(f"Network consensus: {normalized_consensus:.4f} (based on {len(peer_states)} peers)")
-        
-        return np.tanh(normalized_consensus)
-        
-    def _calculate_state_similarity(self, peer_state):
-        """
-        Calcule la similarité entre l'état local du neurone et l'état d'un pair.
-        
-        Args:
-            peer_state (dict): État du pair
-            
-        Returns:
-            float: Score de similarité entre 0 et 1
-        """
-        # Extraire les métriques comparables
-        local_metrics = self.simulator.get_metrics()
-        
-        # Si le pair n'a pas de métriques ou des métriques incompatibles, retourner similitude faible
-        if not peer_state or 'metrics' not in peer_state:
-            return 0.1
-            
-        peer_metrics = peer_state['metrics']
-        
-        # Calculer la similarité des métriques clés
-        similarity_scores = []
-        
-        for key in ['mean_curvature', 'std_deviation', 'quantum_density']:
-            if key in local_metrics and key in peer_metrics:
-                # Normaliser la différence
-                diff = abs(local_metrics[key] - peer_metrics[key])
-                max_val = max(abs(local_metrics[key]), abs(peer_metrics[key]))
-                
-                if max_val > EPSILON:  # Éviter division par zéro
-                    similarity = 1.0 - min(diff / max_val, 1.0)
-                else:
-                    similarity = 1.0 if diff < EPSILON else 0.0
-                
-                similarity_scores.append(similarity)
-        
-        # Moyenne des similarités si on a des scores
-        if similarity_scores:
-            return np.mean(similarity_scores)
-        else:
-            return 0.1  # Valeur par défaut en cas d'incompatibilité
-        
-    def calculate_effective_probability(self, peer_states=None):
-        """
-        Calcule p_eff selon la formule adaptée pour environnement décentralisé.
-        p_eff = p_0 + beta_1*I_crea + beta_2*I_decis + beta_3*C_reseau
-        
-        Args:
-            peer_states (dict): Dict de {peer_id: state_dict} ou None
-            
-        Returns:
-            float: Probabilité effective entre 0.01 et 0.99
-        """
-        I_crea = self.calculate_creativity_index()
-        I_decis = self.calculate_decision_index()
-        C_reseau = self.calculate_network_consensus(peer_states)
-        
-        # Calculer la probabilité effective
-        p_eff = self.p_0 + self.beta_1 * I_crea + self.beta_2 * I_decis + self.beta_3 * C_reseau
-        
-        # Contrainte aux limites pour éviter instabilités numériques
-        p_eff = np.clip(p_eff, 0.01, 0.99)
-        
-        # Sauvegarder l'historique
-        self.creativity_history.append(I_crea)
-        self.decision_history.append(I_decis)
-        self.network_consensus_history.append(C_reseau)
-        self.p_effective_history.append(p_eff)
-        
-        self.logger.debug(f"Effective probability: {p_eff:.4f}")
-        
-        return p_eff
-        
-    def calculate_activation(self, peer_states=None):
-        """
-        Calcule l'activation neuronale L(t) incorporant les effets des pairs.
-        L(t) = 1 - e^{-t\,\phi(t)}
-        
-        Args:
-            peer_states (dict): Dict de {peer_id: state_dict} ou None
-            
-        Returns:
-            float: Niveau d'activation entre 0 et 1
-        """
-        # Si aucun pair connecté, utiliser formule simplifiée
-        if not peer_states or not self.neighbors:
-            p_eff = self.calculate_effective_probability({})
-            phi = 1 - (1 - p_eff) ** 1  # N=1 en mode autonome
-        else:
-            # Calcul du produit des (1-p_eff)^w pour tous les pairs
-            product_term = 1.0
-            for peer_id, state in peer_states.items():
-                if peer_id in self.neighbors:
-                    peer_p_eff = state.get('p_effective', 0.5)
-                    weight = self.neighbors[peer_id]
-                    product_term *= (1 - peer_p_eff) ** weight
-            
-            phi = 1 - product_term
-        
-        # L(t) avec t normalisé
-        t_norm = self.iterations / 1000.0  # Échelle arbitraire
-        L = 1 - np.exp(-t_norm * phi)
-        
-        # Stockage pour analyse
-        self.activation_history.append(L)
-        
-        self.logger.debug(f"Activation L(t): {L:.4f} (phi: {phi:.4f}, t_norm: {t_norm:.4f})")
-        
-        return L
-        
-    def neuron_step(self, intensity=DEFAULT_INTENSITY, peer_states=None):
-        """
-        Effectue une étape de simulation neuronale, intégrant la gravité quantique
-        et les mécanismes neuronaux.
-        
-        Args:
-            intensity (float): Intensité des fluctuations quantiques
-            peer_states (dict): Dict de {peer_id: state_dict} ou None
-            
-        Returns:
-            dict: Résultats de l'étape
-        """
-        # Exécuter une étape de simulation quantique
-        self.simulator.simulate_step(intensity)
-        
-        # Incrémenter le compteur d'itérations
-        self.iterations += 1
-        
-        # Calculer l'activation neuronale
-        activation = self.calculate_activation(peer_states)
-        
-        # Moduler l'espace-temps en fonction de l'activation
-        current_state = self.simulator.get_current_state()
-        modulation = np.random.normal(0, activation, current_state.shape)
-        
-        # L'amplitude de modulation est proportionnelle à l'activation et à l'intensité
-        modulation_scale = intensity * 10
-        self.simulator.space_time[self.simulator.current_step % self.simulator.time_steps] += modulation * modulation_scale
-        
-        # Adapter les poids de connexion en fonction des interactions
-        if peer_states:
-            self._update_connection_weights(peer_states)
-        
-        # Préparer le résultat
-        result = {
-            'node_id': self.node_id,
-            'iteration': self.iterations,
-            'timestamp': datetime.now().isoformat(),
-            'activation': float(activation),
-            'creativity': float(self.creativity_history[-1]),
-            'decision': float(self.decision_history[-1]),
-            'network_consensus': float(self.network_consensus_history[-1]),
-            'p_effective': float(self.p_effective_history[-1]),
-            'metrics': self.simulator.get_metrics(),
-            'space_time_hash': self._compute_state_hash()
-        }
-        
-        self.logger.info(f"Neuron step {self.iterations} completed with activation {activation:.4f}")
-        
-        return result
-        
-    def _update_connection_weights(self, peer_states):
-        """
-        Met à jour les poids de connexion en fonction des interactions.
-        Renforce les connexions utiles et affaiblit les connexions non productives.
-        
-        Args:
-            peer_states (dict): Dict de {peer_id: state_dict}
-        """
-        for peer_id, state in peer_states.items():
-            if peer_id in self.neighbors:
-                # Calculer la similarité avec ce pair
-                similarity = self._calculate_state_similarity(state)
-                
-                # Calculer l'utilité de cette connexion
-                peer_creativity = state.get('creativity', 0.5)
-                
-                # L'utilité est haute si le pair est soit très similaire (consolidation)
-                # soit très créatif (exploration)
-                utility = 0.5 * similarity + 0.5 * peer_creativity
-                
-                # Ajuster le poids de la connexion
-                current_weight = self.neighbors[peer_id]
-                learning_rate = 0.01  # Taux d'apprentissage lent pour stabilité
-                
-                # Renforcement hebbian: "neurons that fire together, wire together"
-                new_weight = current_weight + learning_rate * (utility - current_weight)
-                
-                # Contrainte aux limites
-                self.neighbors[peer_id] = np.clip(new_weight, 0.01, 1.0)
-                
-                self.logger.debug(f"Updated connection to {peer_id}: {current_weight:.3f} -> {self.neighbors[peer_id]:.3f}")
-        
-    def _compute_state_hash(self):
-        """
-        Calcule un hash représentant l'état actuel de l'espace-temps.
-        Utile pour partager un résumé de l'état sans transférer toutes les données.
-        
-        Returns:
-            str: Hash SHA-256 de l'état
-        """
-        # Prendre un sous-échantillon de l'état pour réduire la taille
-        current_state = self.simulator.get_current_state()
-        
-        # Réduction de dimensionnalité (sous-échantillonnage)
-        subsample = current_state[::2, ::2, ::2]
-        
-        # Calcul du hash
-        return hashlib.sha256(subsample.tobytes()).hexdigest()
-        
-    def connect_to_peer(self, peer_id, initial_weight=0.1):
-        """
-        Établit une connexion avec un pair.
-        
-        Args:
-            peer_id (str): Identifiant du pair
-            initial_weight (float): Poids initial de la connexion
-            
-        Returns:
-            bool: True si la connexion est établie, False sinon
-        """
-        if peer_id == self.node_id:
-            self.logger.warning(f"Cannot connect to self")
-            return False
-            
-        if peer_id in self.neighbors:
-            self.logger.debug(f"Already connected to {peer_id}")
-            return True
-            
-        self.neighbors[peer_id] = initial_weight
-        self.logger.info(f"Connected to peer {peer_id} with initial weight {initial_weight}")
-        
-        return True
-        
-    def disconnect_from_peer(self, peer_id):
-        """
-        Supprime la connexion avec un pair.
-        
-        Args:
-            peer_id (str): Identifiant du pair
-            
-        Returns:
-            bool: True si la déconnexion est réussie, False sinon
-        """
-        if peer_id in self.neighbors:
-            del self.neighbors[peer_id]
-            self.logger.info(f"Disconnected from peer {peer_id}")
-            return True
-        else:
-            self.logger.debug(f"Not connected to {peer_id}")
-            return False
-            
-    def share_knowledge(self):
-        """
-        Prépare les connaissances à partager avec les pairs.
-        
-        Returns:
-            dict: Package de connaissances à partager
-        """
-        # Créer un package de connaissances
-        knowledge_package = {
-            'node_id': self.node_id,
-            'timestamp': datetime.now().isoformat(),
-            'iteration': self.iterations,
-            'activation': float(self.activation_history[-1]) if self.activation_history else 0.0,
-            'creativity': float(self.creativity_history[-1]) if self.creativity_history else 0.0,
-            'decision': float(self.decision_history[-1]) if self.decision_history else 0.0,
-            'p_effective': float(self.p_effective_history[-1]) if self.p_effective_history else 0.0,
-            'metrics': self.simulator.get_metrics(),
-            'space_time_hash': self._compute_state_hash()
-        }
-        
-        # Ajouter à l'historique des connaissances partagées
-        self.shared_knowledge.append(knowledge_package)
-        
-        self.logger.debug(f"Prepared knowledge package for sharing")
-        
-        return knowledge_package
-        
-    def receive_knowledge(self, knowledge_package):
-        """
-        Reçoit et traite les connaissances partagées par un pair.
-        
-        Args:
-            knowledge_package (dict): Package de connaissances reçu
-            
-        Returns:
-            bool: True si les connaissances sont valides et traitées, False sinon
-        """
-        # Vérifier si le package est valide
-        if not knowledge_package or 'node_id' not in knowledge_package:
-            self.logger.warning("Received invalid knowledge package")
-            return False
-            
-        # Vérifier que ce n'est pas notre propre connaissance qui revient
-        if knowledge_package['node_id'] == self.node_id:
-            self.logger.debug("Ignoring our own knowledge package")
-            return False
-            
-        # Ajouter à la liste des connaissances reçues
-        self.received_knowledge.append(knowledge_package)
-        
-        # Établir une connexion si ce pair n'est pas déjà connu
-        peer_id = knowledge_package['node_id']
-        if peer_id not in self.neighbors:
-            self.connect_to_peer(peer_id)
-            
-        self.logger.info(f"Received knowledge from peer {peer_id}")
-        
-        return True
-        
-    def get_neuron_state(self):
-        """
-        Renvoie l'état complet du neurone pour diagnostic ou partage.
-        
-        Returns:
-            dict: État complet du neurone
+            dict: État du neurone
         """
         return {
-            'node_id': self.node_id,
-            'iterations': self.iterations,
-            'timestamp': datetime.now().isoformat(),
-            'activation': float(self.activation_history[-1]) if self.activation_history else 0.0,
-            'creativity': float(self.creativity_history[-1]) if self.creativity_history else 0.0,
-            'decision': float(self.decision_history[-1]) if self.decision_history else 0.0,
-            'network_consensus': float(self.network_consensus_history[-1]) if self.network_consensus_history else 0.0,
-            'p_effective': float(self.p_effective_history[-1]) if self.p_effective_history else 0.0,
-            'connected_peers': len(self.neighbors),
-            'peer_list': list(self.neighbors.keys()),
-            'metrics': self.simulator.get_metrics(),
-            'space_time_hash': self._compute_state_hash()
+            "id": self.id,
+            "weights": self.weights.tolist(),
+            "bias": float(self.bias),
+            "input_dim": self.input_dim,
+            "learning_rate": self.learning_rate,
+            "quantum_factor": self.quantum_factor,
+            "activation_type": self.activation_type,
+            "quantum_state": self.quantum_state.tolist(),
+            "quantum_phase": float(self.quantum_phase),
+            "coherence": float(self.coherence)
+        }
+    
+    def set_state(self, state):
+        """
+        Configure l'état du neurone à partir d'un dictionnaire.
+        
+        Args:
+            state (dict): État du neurone
+        """
+        self.id = state.get("id", self.id)
+        self.weights = np.array(state.get("weights", self.weights))
+        self.bias = state.get("bias", self.bias)
+        self.input_dim = state.get("input_dim", self.input_dim)
+        self.learning_rate = state.get("learning_rate", self.learning_rate)
+        self.quantum_factor = state.get("quantum_factor", self.quantum_factor)
+        self.activation_type = state.get("activation_type", self.activation_type)
+        self.quantum_state = np.array(state.get("quantum_state", self.quantum_state))
+        self.quantum_phase = state.get("quantum_phase", self.quantum_phase)
+        self.coherence = state.get("coherence", self.coherence)
+
+
+class NeuronalNetwork:
+    """
+    Réseau de neurones quantiques.
+    
+    Implémente un réseau de neurones utilisant les QuantumNeurons pour former
+    une architecture d'apprentissage complète.
+    """
+    
+    def __init__(self, layers_config, learning_rate=0.01, quantum_factor=0.5):
+        """
+        Initialise un réseau de neurones quantiques.
+        
+        Args:
+            layers_config (list): Configuration des couches sous forme de liste d'entiers
+                                 [input_dim, hidden1, hidden2, ..., output_dim]
+            learning_rate (float): Taux d'apprentissage global
+            quantum_factor (float): Facteur quantique global
+        """
+        self.id = str(uuid.uuid4())[:8]
+        self.layers_config = layers_config
+        self.learning_rate = learning_rate
+        self.quantum_factor = quantum_factor
+        
+        # Création des couches de neurones
+        self.layers = []
+        
+        # Couches cachées + sortie
+        for i in range(1, len(layers_config)):
+            layer = []
+            input_dim = layers_config[i-1]
+            
+            # Créer les neurones de cette couche
+            for _ in range(layers_config[i]):
+                neuron = QuantumNeuron(
+                    input_dim=input_dim,
+                    learning_rate=learning_rate,
+                    quantum_factor=quantum_factor
+                )
+                layer.append(neuron)
+            
+            self.layers.append(layer)
+        
+        # Stockage des activations pour la propagation avant
+        self.activations = []
+        
+        logger.info(f"Réseau neuronal quantique {self.id} initialisé: config={layers_config}")
+    
+    def forward(self, input_values):
+        """
+        Propage l'entrée à travers le réseau (forward pass).
+        
+        Args:
+            input_values (numpy.ndarray): Valeurs d'entrée
+            
+        Returns:
+            numpy.ndarray: Valeurs de sortie du réseau
+        """
+        # Réinitialiser les activations
+        self.activations = [input_values]
+        
+        # Couche par couche
+        for layer in self.layers:
+            layer_activations = []
+            
+            # Pour chaque neurone de la couche
+            for neuron in layer:
+                # Activation avec les sorties de la couche précédente
+                activation = neuron.activate(self.activations[-1])
+                layer_activations.append(activation)
+            
+            # Stocker les activations de cette couche
+            self.activations.append(np.array(layer_activations))
+        
+        # Retourner les activations de la dernière couche
+        return self.activations[-1]
+    
+    def backward(self, target_values, learning_rate=None):
+        """
+        Ajuste les poids du réseau selon l'erreur observée (backward pass).
+        
+        Cette implémentation est une version simplifiée de la rétropropagation,
+        adaptée spécifiquement aux neurones quantiques.
+        
+        Args:
+            target_values (numpy.ndarray): Valeurs cibles
+            learning_rate (float, optional): Taux d'apprentissage spécifique
+            
+        Returns:
+            float: Erreur moyenne
+        """
+        # Vérifier que la propagation avant a été effectuée
+        if not self.activations:
+            raise ValueError("La propagation avant (forward) doit être effectuée avant la rétropropagation")
+        
+        # Utiliser le learning rate par défaut si non spécifié
+        lr = learning_rate if learning_rate is not None else self.learning_rate
+        
+        # Calculer l'erreur de sortie
+        output_values = self.activations[-1]
+        output_errors = target_values - output_values
+        
+        # Pour chaque couche, de la dernière à la première
+        for layer_idx in reversed(range(len(self.layers))):
+            layer = self.layers[layer_idx]
+            layer_input = self.activations[layer_idx]
+            
+            # Pour chaque neurone de la couche
+            for neuron_idx, neuron in enumerate(layer):
+                if layer_idx == len(self.layers) - 1:
+                    # Dernière couche: utiliser l'erreur de sortie
+                    error = output_errors[neuron_idx]
+                else:
+                    # Couches cachées: propager l'erreur
+                    error = 0
+                    next_layer = self.layers[layer_idx + 1]
+                    for next_neuron in next_layer:
+                        # Contribution à l'erreur basée sur les poids connectés
+                        error += next_neuron.weights[neuron_idx] * next_neuron.training_history[-1]["error"]
+                
+                # Apprentissage du neurone
+                neuron.learn(layer_input, 
+                             neuron.activate(layer_input) + lr * error, 
+                             learning_rate=lr)
+        
+        # Retourner l'erreur moyenne
+        return np.mean(np.abs(output_errors))
+    
+    def train(self, input_batch, target_batch, epochs=100, learning_rate=None, validation_split=0.0, 
+              early_stopping=False, patience=10, verbose=1):
+        """
+        Entraîne le réseau sur un ensemble de données.
+        
+        Args:
+            input_batch (list): Liste des entrées d'entraînement
+            target_batch (list): Liste des sorties cibles
+            epochs (int): Nombre d'époques d'entraînement
+            learning_rate (float, optional): Taux d'apprentissage
+            validation_split (float): Portion des données à utiliser pour la validation (0.0-1.0)
+            early_stopping (bool): Arrêter l'entraînement si pas d'amélioration
+            patience (int): Nombre d'époques sans amélioration avant arrêt
+            verbose (int): Niveau de détail des logs (0: aucun, 1: normal, 2: détaillé)
+            
+        Returns:
+            dict: Historique d'entraînement (erreurs par époque)
+        """
+        if len(input_batch) != len(target_batch):
+            raise ValueError("Le nombre d'entrées et de cibles doit être identique")
+            
+        # Convertir en tableaux numpy si nécessaire
+        input_batch = np.array(input_batch)
+        target_batch = np.array(target_batch)
+        
+        # Diviser en ensembles d'entraînement et de validation si demandé
+        val_input = []
+        val_target = []
+        if validation_split > 0:
+            val_size = int(len(input_batch) * validation_split)
+            train_input = input_batch[:-val_size]
+            train_target = target_batch[:-val_size]
+            val_input = input_batch[-val_size:]
+            val_target = target_batch[-val_size:]
+        else:
+            train_input = input_batch
+            train_target = target_batch
+        
+        # Historique d'entraînement
+        history = {
+            "training_error": [],
+            "validation_error": [] if validation_split > 0 else None,
+            "best_epoch": 0,
+            "convergence": False
         }
         
-    def save_state(self, filepath):
+        # Variables pour early stopping
+        best_val_error = float('inf')
+        no_improvement_count = 0
+        
+        # Boucle d'entraînement
+        for epoch in range(epochs):
+            epoch_errors = []
+            
+            # Mélanger les données à chaque époque
+            indices = np.random.permutation(len(train_input))
+            
+            # Pour chaque exemple d'entraînement
+            for i in indices:
+                # Propagation avant
+                _ = self.forward(train_input[i])
+                
+                # Rétropropagation
+                error = self.backward(train_target[i], learning_rate)
+                epoch_errors.append(error)
+            
+            # Erreur moyenne d'entraînement
+            mean_train_error = np.mean(epoch_errors)
+            history["training_error"].append(mean_train_error)
+            
+            # Initialiser la variable mean_val_error avant utilisation
+            mean_val_error = float('inf')
+            
+            # Validation si demandée
+            if validation_split > 0 and len(val_input) > 0:
+                val_errors = []
+                for i in range(len(val_input)):
+                    # Propagation avant uniquement (pas d'apprentissage)
+                    pred = self.forward(val_input[i])
+                    # Erreur
+                    val_error = np.mean(np.abs(val_target[i] - pred))
+                    val_errors.append(val_error)
+                
+                mean_val_error = np.mean(val_errors)
+                history["validation_error"].append(mean_val_error)
+                
+                # Early stopping
+                if early_stopping:
+                    if mean_val_error < best_val_error:
+                        best_val_error = mean_val_error
+                        no_improvement_count = 0
+                        history["best_epoch"] = epoch
+                    else:
+                        no_improvement_count += 1
+                        
+                    if no_improvement_count >= patience:
+                        if verbose > 0:
+                            logger.info(f"Early stopping à l'époque {epoch+1}")
+                        break
+            
+            # Afficher la progression
+            if verbose > 0 and (epoch % max(1, epochs//10) == 0 or epoch == epochs-1):
+                val_msg = f", val_error: {mean_val_error:.4f}" if validation_split > 0 and len(val_input) > 0 else ""
+                logger.info(f"Époque {epoch+1}/{epochs}, error: {mean_train_error:.4f}{val_msg}")
+            
+            # Vérifier la convergence
+            if mean_train_error < 0.01:
+                history["convergence"] = True
+                if verbose > 0:
+                    logger.info(f"Convergence atteinte à l'époque {epoch+1}")
+                break
+        
+        return history
+    
+    def predict(self, input_values):
         """
-        Sauvegarde l'état complet du neurone.
+        Prédit la sortie pour une entrée donnée.
         
         Args:
-            filepath (str): Chemin du fichier de sauvegarde
+            input_values: Valeurs d'entrée
             
         Returns:
-            bool: True si la sauvegarde a réussi, False sinon
+            numpy.ndarray: Prédiction du réseau
         """
-        try:
-            # Sauvegarder l'état du simulateur sous-jacent
-            sim_filepath = filepath + '.sim.npz'
-            self.simulator.save_state(sim_filepath)
-            
-            # Préparer l'état du neurone
-            neuron_state = {
-                'node_id': self.node_id,
-                'p_0': self.p_0,
-                'beta_1': self.beta_1,
-                'beta_2': self.beta_2,
-                'beta_3': self.beta_3,
-                'iterations': self.iterations,
-                'activation_history': self.activation_history,
-                'creativity_history': self.creativity_history,
-                'decision_history': self.decision_history,
-                'network_consensus_history': self.network_consensus_history,
-                'p_effective_history': self.p_effective_history,
-                'neighbors': self.neighbors,
-                'simulator_file': sim_filepath
-            }
-            
-            # Sauvegarder l'état du neurone
-            with open(filepath, 'w') as f:
-                json.dump(neuron_state, f, indent=2)
-                
-            self.logger.info(f"Neuron state saved to {filepath}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to save neuron state: {str(e)}")
-            return False
-            
-    def load_state(self, filepath):
+        return self.forward(input_values)
+    
+    def evaluate(self, input_batch, target_batch):
         """
-        Charge l'état du neurone depuis un fichier.
+        Évalue les performances du réseau sur un ensemble de test.
         
         Args:
-            filepath (str): Chemin du fichier à charger
+            input_batch (list): Ensemble de test (entrées)
+            target_batch (list): Ensemble de test (cibles)
             
         Returns:
-            bool: True si le chargement a réussi, False sinon
+            dict: Métriques de performance
         """
-        try:
-            # Charger l'état du neurone
-            with open(filepath, 'r') as f:
-                neuron_state = json.load(f)
-                
-            # Charger l'état du simulateur
-            sim_filepath = neuron_state.get('simulator_file')
-            if sim_filepath and os.path.exists(sim_filepath):
-                self.simulator.load_state(sim_filepath)
-                
-            # Restaurer les paramètres du neurone
-            self.node_id = neuron_state.get('node_id', self._generate_node_id())
-            self.p_0 = neuron_state.get('p_0', 0.5)
-            self.beta_1 = neuron_state.get('beta_1', 0.3)
-            self.beta_2 = neuron_state.get('beta_2', 0.3)
-            self.beta_3 = neuron_state.get('beta_3', 0.2)
+        if len(input_batch) != len(target_batch):
+            raise ValueError("Le nombre d'entrées et de cibles doit être identique")
+        
+        errors = []
+        predictions = []
+        
+        for i in range(len(input_batch)):
+            pred = self.predict(input_batch[i])
+            error = np.mean(np.abs(target_batch[i] - pred))
+            errors.append(error)
+            predictions.append(pred)
+        
+        return {
+            "mean_error": np.mean(errors),
+            "max_error": np.max(errors),
+            "min_error": np.min(errors),
+            "predictions": predictions
+        }
+    
+    def save(self, file_path):
+        """
+        Sauvegarde le réseau dans un fichier.
+        
+        Args:
+            file_path (str): Chemin du fichier de sauvegarde
+        """
+        import json
+        
+        # Construire la représentation du réseau
+        network_data = {
+            "id": self.id,
+            "layers_config": self.layers_config,
+            "learning_rate": self.learning_rate,
+            "quantum_factor": self.quantum_factor,
+            "layers": []
+        }
+        
+        # Sauvegarder chaque couche
+        for layer in self.layers:
+            layer_data = []
+            for neuron in layer:
+                layer_data.append(neuron.get_state())
+            network_data["layers"].append(layer_data)
+        
+        # Écrire dans le fichier
+        with open(file_path, 'w') as f:
+            json.dump(network_data, f, indent=2)
+    
+    @classmethod
+    def load(cls, file_path):
+        """
+        Charge un réseau depuis un fichier.
+        
+        Args:
+            file_path (str): Chemin du fichier de sauvegarde
             
-            # Restaurer l'état du neurone
-            self.iterations = neuron_state.get('iterations', 0)
-            self.activation_history = neuron_state.get('activation_history', [])
-            self.creativity_history = neuron_state.get('creativity_history', [])
-            self.decision_history = neuron_state.get('decision_history', [])
-            self.network_consensus_history = neuron_state.get('network_consensus_history', [])
-            self.p_effective_history = neuron_state.get('p_effective_history', [])
-            self.neighbors = neuron_state.get('neighbors', {})
-            
-            self.logger.info(f"Neuron state loaded from {filepath}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to load neuron state: {str(e)}")
-            return False
+        Returns:
+            NeuronalNetwork: Réseau chargé
+        """
+        import json
+        
+        with open(file_path, 'r') as f:
+            network_data = json.load(f)
+        
+        # Créer une nouvelle instance
+        network = cls(
+            layers_config=network_data["layers_config"],
+            learning_rate=network_data["learning_rate"],
+            quantum_factor=network_data["quantum_factor"]
+        )
+        
+        network.id = network_data["id"]
+        
+        # Charger l'état de chaque neurone
+        for layer_idx, layer_data in enumerate(network_data["layers"]):
+            for neuron_idx, neuron_data in enumerate(layer_data):
+                network.layers[layer_idx][neuron_idx].set_state(neuron_data)
+        
+        return network
