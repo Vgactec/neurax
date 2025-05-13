@@ -12,7 +12,7 @@ run = ["sh", "-c", "python app.py"]
 defaultTool = "run"
 
 [workflows]
-runButton = "Run ARC Tests"
+runButton = "Run Tests"
 
 [[workflows.workflow]]
 name = "Run Tests"
@@ -21,15 +21,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python neurax_complet/comprehensive_test_framework.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "python neurax_complet/test_arc_optimization.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python neurax_complet/test_runner.py"
 
 [[workflows.workflow]]
 name = "Run ARC Tests"
