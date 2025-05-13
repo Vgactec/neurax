@@ -772,7 +772,7 @@ class TestSuite:
                         "id": "test_item_001",
                         "type": "SOLUTION",
                         "data": {"content": "Test solution data"}
-```python
+                    ```python
                     }
 
                     request = consensus.create_validation_request(
@@ -1588,56 +1588,3 @@ class TestSuite:
         logger.info(f"Tests terminés. Taux de réussite: {summary['success_rate']}%")
 
         return self.results
-
-
-# Fonction principale
-def main():
-    """Point d'entrée principal pour les tests"""
-    # Configurer les emplacements des fichiers de sortie
-    output_dir = os.path.dirname(os.path.abspath(__file__))
-    report_path = os.path.join(output_dir, "rapport_tests_complets.md")
-    data_path = os.path.join(output_dir, "resultats_tests_complets.csv")
-    arc_data_path = os.path.join(output_dir, "resultats_arc_tests.csv")
-
-    # Charger la suite de tests
-    test_suite = TestSuite()
-
-    # Exécuter tous les tests
-    results = test_suite.run_all_tests()
-
-    # Générer le rapport détaillé
-    results.generate_detailed_report(report_path)
-    logger.info(f"Rapport détaillé généré dans {report_path}")
-
-    # Exporter les résultats bruts au format CSV
-    results.export_to_csv(data_path)
-    logger.info(f"Données de test exportées dans {data_path}")
-
-```python
-    # Exporter les résultats ARC au format CSV
-    if results.arc_puzzle_results:
-        results.export_arc_results_to_csv(arc_data_path)
-        logger.info(f"Résultats des tests ARC exportés dans {arc_data_path}")
-
-    # Afficher le résumé
-    summary = results.get_summary()
-    print(f"\nRésumé des tests:")
-    print(f"- Total des tests: {summary['total_tests']}")
-    print(f"- Tests réussis: {summary['passed_tests']}")
-    print(f"- Tests échoués: {summary['failed_tests']}")
-    print(f"- Tests ignorés: {summary['skipped_tests']}")
-    print(f"- Taux de réussite: {summary['success_rate']}%")
-    print(f"- Temps d'exécution total: {summary['total_execution_time']} secondes")
-
-    # Si des puzzles ARC ont été testés, afficher le résumé
-    if "arc_summary" in summary:
-        print("\nRésumé des tests ARC:")
-        for phase, phase_stats in summary["arc_summary"].items():
-            avg_acc = f"{phase_stats['avg_accuracy']*100:.2f}%" if phase_stats['avg_accuracy'] is not None else "N/A"
-            print(f"- Phase {phase}: {phase_stats['count']} puzzles, Précision moyenne: {avg_acc}")
-
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

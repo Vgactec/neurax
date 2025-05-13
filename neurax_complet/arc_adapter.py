@@ -1,4 +1,4 @@
-# Adding path handling for ARC data and integrating it into the ARCAdapter's initialization process.
+# Applying fix for ARC data loading paths using os.path.join for correct path resolution.
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 

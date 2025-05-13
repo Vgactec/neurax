@@ -17,7 +17,13 @@ class QuantumGravityVisualizer:
         plt.rcParams['figure.facecolor'] = '#0E1117'
         plt.rcParams['axes.facecolor'] = '#0E1117'
 
-    def create_3d_plot(self, space_time_data, threshold_percentile=99, dpi=100):
+    def create_3d_plot(self, data):
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    x, y, z = np.where(data > 0)
+    im = ax.scatter(x, y, z, c=data[x, y, z], cmap='viridis')
+    plt.colorbar(im)
+    return fig(self, space_time_data, threshold_percentile=99, dpi=100):
     space_time = np.array(space_time_data)
     if len(space_time.shape) < 3:
         space_time = space_time.reshape(-1, space_time.shape[-2], space_time.shape[-1])
