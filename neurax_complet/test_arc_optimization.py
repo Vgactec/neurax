@@ -24,10 +24,10 @@ import random
 import copy
 
 # Imports Neurax
-from neurax_complet.quantum_gravity_sim import QuantumGravitySimulator
-from neurax_complet.arc_adapter import ARCAdapter
-from neurax_complet.core.neuron.quantum_neuron import QuantumNeuron, NeuronalNetwork
-from neurax_complet.arc_learning_system import (
+from quantum_gravity_sim import QuantumGravitySimulator
+from arc_adapter import ARCAdapter
+from core.neuron.quantum_neuron import QuantumNeuron, NeuronalNetwork
+from arc_learning_system import (
     QUANTUM_GRID_SIZE, NUM_TIME_STEPS, MAX_ITERATIONS, 
     TransformationPatternBase, IdentityPattern, HorizontalFlipPattern, 
     VerticalFlipPattern, RotatePattern, ColorMapPattern, CompositePattern

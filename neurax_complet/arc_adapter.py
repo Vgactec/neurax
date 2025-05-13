@@ -1,4 +1,4 @@
-# Adding path handling for ARC data and integrating it into the ARCAdapter's initialization process.
+# Applying fix for ARC data loading paths using os.path.join for correct path resolution.
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -36,22 +36,17 @@ class ARCAdapter:
     Adaptateur pour convertir les grilles ARC en représentations pour le simulateur de gravité quantique
     et récupérer des prédictions en format ARC.
     """
+    def __init__(self, grid_size=50, time_steps=10, encoding_method="direct", arc_data_path="arc_data"):
+        """
+        Initialisation de l'adaptateur
 
-    # def __init__(self, grid_size=50, time_steps=10, encoding_method="direct"):
-    #     """
-    #     Initialisation de l'adaptateur
-
-    #     Args:
-    #         grid_size (int): Taille de la grille du simulateur
-    #         time_steps (int): Nombre de pas temporels
-    #         encoding_method (str): Méthode d'encodage ("direct", "spectral", "wavelet")
-    #     """
-    #     self.grid_size = grid_size
-    #     self.time_steps = time_steps
-    #     self.simulator = QuantumGravitySimulator(grid_size=grid_size, time_steps=time_steps)
-    #     self.encoding_method = encoding_method
-
-        # Mappings pour la conversion bidirectionnelle
+        Args:
+            grid_size (int): Taille de la grille du simulateur
+            time_steps (int): Nombre de pas temporels
+            encoding_method (str): Méthode d'encodage ("direct", "spectral", "wavelet")
+            arc_data_path (str): Chemin vers les données ARC
+        """
+        # Initialisation des attributs
         self.grid_size = grid_size
         self.time_steps = time_steps
         self.simulator = QuantumGravitySimulator(grid_size=grid_size, time_steps=time_steps)
@@ -488,4 +483,3 @@ if __name__ == "__main__":
     print(test_grid)
     print("\nTransformed grid:")
     print(result)
-`

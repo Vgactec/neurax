@@ -10,7 +10,15 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO,
                    format='%(asctime)s - %(levelname)s - %(message)s')
 
-class DatabaseManager:
+class class DatabaseManager:
+    def __init__(self, fallback_file="local_database_fallback.json"):
+        self.fallback_file = fallback_file
+        try:
+            import psycopg2
+            self.db = psycopg2.connect(os.getenv("DATABASE_URL"))
+        except:
+            self.db = None
+            logging.warning("Using JSON fallback for database"):
     def __init__(self):
         self.use_fallback = False
         self.fallback_data = {"simulations": []}

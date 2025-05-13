@@ -29,7 +29,7 @@ import copy
 import warnings
 
 # Import du simulateur de gravité quantique
-from neurax_complet.quantum_gravity_sim import QuantumGravitySimulator
+from quantum_gravity_sim import QuantumGravitySimulator
 
 # Constants
 QUANTUM_GRID_SIZE = 50  # Taille de la grille pour le simulateur
