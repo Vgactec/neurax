@@ -772,8 +772,7 @@ class TestSuite:
                         "id": "test_item_001",
                         "type": "SOLUTION",
                         "data": {"content": "Test solution data"}
-                    ```python
-                    }
+                                        }
 
                     request = consensus.create_validation_request(
                         test_item["id"], 
