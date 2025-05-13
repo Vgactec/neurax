@@ -25,7 +25,7 @@ import copy
 
 # Imports Neurax
 from quantum_gravity_sim import QuantumGravitySimulator
-from neurax_complet.arc_adapter import ARCAdapter
+from arc_adapter import ARCAdapter
 from neurax_complet.core.neuron.quantum_neuron import QuantumNeuron, NeuronalNetwork
 from neurax_complet.arc_learning_system import (
     QUANTUM_GRID_SIZE, NUM_TIME_STEPS, MAX_ITERATIONS, 
