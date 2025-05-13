@@ -46,6 +46,11 @@ class QuantumGravityVisualizer:
         return fig
 
     def create_slice_plot(self, space_time, slice_idx=None, dpi=100):
+        """Optimized 2D slice visualization with format validation"""
+        if len(space_time.shape) != 3:
+            space_time = space_time.reshape((-1, space_time.shape[-2], space_time.shape[-1]))
+        if slice_idx is None:
+            slice_idx = min(space_time.shape[0] // 2, space_time.shape[0] - 1)
         """Optimized 2D slice visualization for real-time updates"""
         logging.debug("Generating 2D slice visualization")
         if slice_idx is None:

@@ -267,6 +267,7 @@ class P2PNetwork:
             min_connections (int): Nombre minimum de connexions à maintenir
         """
         self.logger = logging.getLogger(__name__)
+        self.port = local_port  # Fix: Initialize port attribute
         
         # Identifiant unique pour ce nœud
         self.node_id = node_id or self._generate_node_id()
