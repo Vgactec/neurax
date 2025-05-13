@@ -726,14 +726,19 @@ class P2PNetwork:
         """
         self.logger.info(f"Connecting to bootstrap node {host}:{port}")
         
+        # Ajouter un délai aléatoire pour éviter les collisions lors des connexions simultanées
+        await asyncio.sleep(random.uniform(0.1, 1.0))
+        
         try:
-            # Créer une socket et se connecter
+            # Créer une socket et se connecter avec un timeout
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.setblocking(False)
             
+            # Utiliser wait_for avec timeout pour éviter les blocages potentiels
             try:
-                await asyncio.get_event_loop().sock_connect(client_socket, (host, port))
-            except (ConnectionRefusedError, OSError) as e:
+                connect_coro = asyncio.get_event_loop().sock_connect(client_socket, (host, port))
+                await asyncio.wait_for(connect_coro, timeout=10.0)  # Timeout de 10 secondes
+            except (ConnectionRefusedError, OSError, asyncio.TimeoutError) as e:
                 self.logger.error(f"Failed to connect to bootstrap node {host}:{port}: {e}")
                 client_socket.close()
                 return False
@@ -752,16 +757,37 @@ class P2PNetwork:
             connection = Connection(peer_info, client_socket)
             await connection.start()
             
-            # Stocker temporairement
+            # Stocker temporairement avec vérification des duplications possibles
+            if temp_id in self.connections:
+                self.logger.warning(f"Overwriting existing connection with ID {temp_id}")
+                await self.connections[temp_id].close()
+                
             self.connections[temp_id] = connection
             
-            # Envoyer un HELLO
+            # Envoyer un HELLO avec notre identité complète
+            capabilities = {
+                "type": "full_node",
+                "version": "1.0.0",
+                "port": self.port,  # Indiquer notre port d'écoute
+                "features": ["quantum_sim", "neuron", "consensus"]
+            }
+            
             hello = Message.create_hello(
                 sender_id=self.node_id,
-                capabilities={"type": "full_node"},
+                capabilities=capabilities,
                 public_key="our_public_key"  # À remplacer par la vraie clé
             )
-            await connection.send_message(hello)
+            
+            # Utiliser wait_for pour l'envoi du message également
+            try:
+                send_coro = connection.send_message(hello)
+                await asyncio.wait_for(send_coro, timeout=5.0)  # Timeout de 5 secondes
+            except asyncio.TimeoutError:
+                self.logger.error(f"Timeout sending HELLO to {host}:{port}")
+                await connection.close()
+                if temp_id in self.connections:
+                    del self.connections[temp_id]
+                return False
             
             # Lancer une tâche pour gérer cette connexion
             asyncio.create_task(self._handle_connection(connection))
