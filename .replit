@@ -2,7 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "hdf5", "libxcrypt", "openssh", "pkg-config", "qhull", "tcl", "tk", "xsimd"]
+packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "hdf5", "libxcrypt", "openssh", "pkg-config", "qhull", "tcl", "tk", "unzip", "xsimd"]
 
 [deployments]
 build = ["sh", "-c", "python -m pip install -r requirements.txt"]
