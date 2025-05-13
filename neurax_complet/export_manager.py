@@ -12,15 +12,15 @@ class ExportManager:
                           format='%(asctime)s - %(levelname)s - %(message)s')
         
     def export_to_excel(self, data, metrics, parameters):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"quantum_gravity_export_{timestamp}.xlsx"
-    
-    with pd.ExcelWriter(filename) as writer:
-        pd.DataFrame(data).to_excel(writer, sheet_name='Data')
-        pd.DataFrame([metrics]).to_excel(writer, sheet_name='Metrics')
-        pd.DataFrame([parameters]).to_excel(writer, sheet_name='Parameters')
-    
-    return filename(self, space_time, metrics, parameters):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"quantum_gravity_export_{timestamp}.xlsx"
+        
+        with pd.ExcelWriter(filename) as writer:
+            pd.DataFrame(data).to_excel(writer, sheet_name='Data')
+            pd.DataFrame([metrics]).to_excel(writer, sheet_name='Metrics')
+            pd.DataFrame([parameters]).to_excel(writer, sheet_name='Parameters')
+        
+        return filename(self, space_time, metrics, parameters):
         """Export simulation data to Excel format with multiple sheets"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"quantum_gravity_export_{timestamp}.xlsx"
