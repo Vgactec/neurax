@@ -1,6 +1,6 @@
 # Rapport d'Exécution des Tests Neurax
 
-Date: 2025-05-13 00:06:54
+Date: 2025-05-13 03:33:14
 
 ## Résumé
 
@@ -15,15 +15,15 @@ Date: 2025-05-13 00:06:54
 ### ✅ Simulateur de Gravité Quantique
 
 - **Statut**: PASS
-- **Temps d'exécution**: 0.0011 secondes
+- **Temps d'exécution**: 0.0013 secondes
 - **Détails**:
   - grid_size_correct: True
   - has_space_time: True
   - has_quantum_fluctuations: True
   - fluctuations_called: True
   - space_time_shape: (8, 20, 20, 20)
-  - min_value: -378.999955
-  - max_value: 324.043867
-  - mean_value: -0.037711
+  - min_value: -459.510627
+  - max_value: 274.941050
+  - mean_value: -0.031509
   - has_fluctuations: True
 
